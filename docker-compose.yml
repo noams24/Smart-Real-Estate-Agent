@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres
+    ports:
+    - 5432:5432
+    volumes:
+      - ./postgresdata:/var/lib/postgresql/data
+
+  # appserver:
+  #   container_name: nadlan-server
+  #   hostname: localhost
+  #   image: real-estate-agent
+  #   build:
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - postgres
