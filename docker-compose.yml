@@ -1,18 +1,30 @@
+version: "3"
 services:
-  postgres:
-    image: postgres
+  mongo:
+    image: mongo
     ports:
-    - 5432:5432
-    volumes:
-      - ./postgresdata:/var/lib/postgresql/data
+      - 27017:27017
+    privileged: true
 
-  # appserver:
-  #   container_name: nadlan-server
-  #   hostname: localhost
-  #   image: real-estate-agent
-  #   build:
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     - postgres
+  appserver:
+    container_name: real-estate-agent-server
+    hostname: localhost
+    image: real-estate-agent-server
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo
+
+  appclient:
+    image: real-estate-agent-client
+    build:
+      context: /frontend/.
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"  
+    volumes:
+      - .:/frontend/app
+      - /frontend/app/node_modules
+      - /frontend/app/.next

@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  # app:
+  #   image: frontend
+  #   build:
+  #     context: ./
+  #     # target: dev
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #       - .:/app
+  #       - /node_modules
+  #       - /.next
+  #   ports:
+  #     - "3000:3000"
+
+#  frontend:
+#     build: .
+#     ports:
+#       - "3000:3000"  
+#     volumes:
+#       - .:/app
+#       - /app/.next
+
+
+ frontend:
+    image: frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: real-estate-agent
+    ports:
+      - "3000:3000"  
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
