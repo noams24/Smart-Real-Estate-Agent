@@ -17,28 +17,31 @@ public class ScrapeService {
                         "neighborhood\":\\{\"text\":\"([^\"]+)\"},\"street\":\\{\"text\":\"([^\"]+)\"[^0-9]+[^:]+:([0-9]).*?(?=price)price\":([0-9]+),\"token\":\"([^\"]+).*?(?=property)property\":\\{\"text\":\"([א-ת]+)[^:]+:([0-9])[^:]+:([0-9]+).*?(?=Image)Image\":\"([^\"]+)");
         OkHttpClient client = new OkHttpClient().newBuilder().build();
 
-        public JSONArray scrapeYad2(String url)
+        public JSONObject scrapeYad2(String url)
                         throws IOException {
 
                 return parseProductHtml(getHouseHtml(url));
         }
 
-        private JSONArray parseProductHtml(String html) {
+        private JSONObject parseProductHtml(String html) {
                 Matcher matcher = PRODUCT_PATTERN.matcher(html);
-                JSONArray houses = new JSONArray();
-                for (int i = 0; i < 30; i++) {
+                JSONObject houses = new JSONObject();
+                for (int i = 0; i < 10; i++) {
                         if (matcher.find()) {
-                                JSONObject house = new JSONObject();
-                                house.put("neighborhood", matcher.group(1));
-                                house.put("street", matcher.group(2));
-                                house.put("floor", matcher.group(3));
-                                house.put("price", matcher.group(4));
-                                house.put("houseUrl", matcher.group(5));
-                                house.put("type", matcher.group(6));
-                                house.put("rooms", matcher.group(7));
-                                house.put("area", matcher.group(8));
-                                house.put("imgUrl", matcher.group(9));
-                                houses.put(house);
+                                if (!houses.has(matcher.group(5))) {
+                                        JSONObject house = new JSONObject();
+                                        house.put("neighborhood", matcher.group(1));
+                                        house.put("street", matcher.group(2));
+                                        house.put("floor", matcher.group(3));
+                                        house.put("price", matcher.group(4));
+                                        house.put("houseUrl", matcher.group(5));
+                                        house.put("type", matcher.group(6));
+                                        house.put("rooms", matcher.group(7));
+                                        house.put("area", matcher.group(8));
+                                        house.put("imgUrl", matcher.group(9));
+
+                                        houses.put(matcher.group(5), house);
+                                }
                         } else
                                 break;
                 }

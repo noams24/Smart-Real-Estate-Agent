@@ -1,10 +1,9 @@
 package com.handson.agent.controller;
 
 import java.io.IOException;
-// import java.util.List;
-// import java.util.Optional;
+import java.util.Set;
 
-import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
@@ -18,17 +17,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.handson.agent.model.RealEstate;
 import com.handson.agent.model.RequestUrl;
-// import com.handson.agent.repo.RealEstateRepository;
 import com.handson.agent.repo.RequestUrlRepositry;
 import com.handson.agent.service.RealEstateService;
 import com.handson.agent.service.ScrapeService;
 import com.handson.agent.service.SmartAgentService;
-import com.handson.agent.service.ThreadManager;
-
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-// import static com.handson.tinyurl.model.User.UserBuilder.anUser;
+
 import static com.handson.agent.model.RequestUrl.urlBuilder.aRequestUrl;
 
 @Service
@@ -46,29 +42,14 @@ public class RealEstateController {
         ScrapeService scrapeService;
 
         @Autowired
-        private ThreadManager threadManager;
-        
-        @Autowired
         private RequestUrlRepositry requestUrlRepository;
 
         @Autowired
         private MongoTemplate mongoTemplate;
 
         @CrossOrigin
-        @RequestMapping(value = "/realEstate", method = RequestMethod.GET)
-        public ResponseEntity<?> getHouses(@RequestParam(defaultValue = "forsale") String type,
-                        @RequestParam String city,
-                        @RequestParam(defaultValue = "0") Integer minPrice,
-                        @RequestParam(defaultValue = "100000000") Integer maxPrice,
-                        @RequestParam(required = false) Integer rooms)
-                        throws IOException {
-                return new ResponseEntity<>(realEstateService.searchHouses(type, city, minPrice, maxPrice, rooms),
-                                HttpStatus.OK);
-        }
-
-        @CrossOrigin
-        @RequestMapping(value = "/smartAgent", method = RequestMethod.GET)
-        public ResponseEntity<?> startAgent(@RequestParam(defaultValue = "forsale") String type,
+        @RequestMapping(value = "/agent", method = RequestMethod.GET)
+        public ResponseEntity<?> agent(@RequestParam(defaultValue = "forsale") String type,
                         @RequestParam String city,
                         @RequestParam(defaultValue = "0") Integer minPrice,
                         @RequestParam(defaultValue = "100000000") Integer maxPrice,
@@ -87,92 +68,184 @@ public class RealEstateController {
                 // check if the data exists
                 boolean exist = requestUrlRepository.existsById(url);
 
-                // if not exists:
+                // if data not exists, scrape and return data:
                 if (!exist) {
+                        JSONObject data = scrapeService.scrapeYad2(url);
+
+                        // save to db:
                         RequestUrl newUrl = aRequestUrl().withId(url).build();
                         requestUrlRepository.insert(newUrl);
-
-                        // step 1: scrape data
-                        JSONArray data = scrapeService.scrapeYad2(url);
-
-                        // step 2: save the data to the db
-
                         Query query = Query.query(Criteria.where("_id").is(url));
-                        for (int i = 0; i < data.length(); i++) {
-                                // make sure real estate doesn't already exist
-                                Query query2 = Query.query(Criteria.where("realEstates.houseUrl")
-                                                .is(data.getJSONObject(i).getString("houseUrl")));
-                                if (mongoTemplate.exists(query2, "request_url")) {
-                                        // System.out.println("Exists!");
-                                }
-                                // create new real estate object and add it to the db!
-                                else {
-                                        RealEstate realEstate = new RealEstate(type, city, data.getJSONObject(i));
-                                        Update update = new Update().addToSet("realEstates", realEstate);
-                                        mongoTemplate.updateFirst(query, update, "request_url");
-                                }
+
+                        // Iterable<JSONObject> values = data.valu
+                        Set<String> keys = data.keySet();
+                        for (String key : keys) {
+                                JSONObject value = (JSONObject) data.get(key);
+                                RealEstate realEstate = new RealEstate(type, city, value);
+                                Update update = new Update().addToSet("realEstates", realEstate);
+                                mongoTemplate.updateFirst(query, update, "request_url");
                         }
-                        return new ResponseEntity<>(data.toString(), HttpStatus.OK);
-                }
-
-                // if exists:
-                RequestUrl realEstates = requestUrlRepository.findById(url).get();
-                return new ResponseEntity<>(realEstates.getRealEstates(), HttpStatus.OK);
-
-        }
-        
-        @CrossOrigin
-        @RequestMapping(value = "/activateAgentThread", method = RequestMethod.POST)
-        public ResponseEntity<?> activateAgentThread(@RequestParam(defaultValue = "forsale") String type,
-                        @RequestParam String city,
-                        @RequestParam(defaultValue = "0") Integer minPrice,
-                        @RequestParam(defaultValue = "100000000") Integer maxPrice,
-                        @RequestParam(required = false) Integer rooms) {
-
-                new Thread(() -> {
-                        while (true) {
+                        // return new ResponseEntity<>(data.toString(), HttpStatus.OK);
+                } else {
+                        // if data exists, return data and update new real estates
+                        new Thread(() -> {
                                 try {
-                                        Thread.sleep(10000);
-                                        System.out.println("thread started");
-                                        String url = "";
+                                        String url1 = "";
                                         if (rooms instanceof Integer)
-                                                url = "https://www.yad2.co.il/realestate/" + type + "?city=" + city
+                                                url1 = "https://www.yad2.co.il/realestate/" + type + "?city=" + city
                                                                 + "&" +
                                                                 "rooms=" + rooms + "-" + rooms
                                                                 + "&" + "price=" + minPrice + "-" + maxPrice;
 
                                         else
-                                                url = "https://www.yad2.co.il/realestate/" + type + "?city=" + city
+                                                url1 = "https://www.yad2.co.il/realestate/" + type + "?city=" + city
                                                                 + "&" + "price=" + minPrice + "-" + maxPrice;
+                                        JSONObject data = scrapeService.scrapeYad2(url1);
+                                        Query query = Query.query(Criteria.where("_id").is(url1));
 
-                                        JSONArray data = scrapeService.scrapeYad2(url);
-                                        Query query = Query.query(Criteria.where("_id").is(url));
-                                        for (int i = 0; i < data.length(); i++) {
+                                        Set<String> keys = data.keySet();
+                                        for (String key : keys) {
+                                                JSONObject value = (JSONObject) data.get(key);
                                                 // make sure real estate doesn't already exist
                                                 Query query2 = Query.query(Criteria.where("realEstates.houseUrl")
-                                                                .is(data.getJSONObject(i).getString("houseUrl")));
-                                                if (mongoTemplate.exists(query2, "request_url")) {
-                                                        // System.out.println("Exists!");
-                                                }
-                                                // create new real estate object and add it to the db!
-                                                else {
-                                                        RealEstate realEstate = new RealEstate(type, city,
-                                                                        data.getJSONObject(i));
+                                                                .is(value.getString("houseUrl")));
+                                                if (!mongoTemplate.exists(query2, "request_url")) {
+                                                        RealEstate realEstate = new RealEstate(type, city, value);
                                                         Update update = new Update().addToSet("realEstates",
                                                                         realEstate);
                                                         mongoTemplate.updateFirst(query, update, "request_url");
                                                 }
                                         }
-                                        System.out.println("thread ended");
+
                                 } catch (Exception e) {
                                         e.printStackTrace();
                                 }
-                        }
-                }).start();
-                return new ResponseEntity<>("Agent started", HttpStatus.OK);
+                        }).start();
+                }
+                RequestUrl realEstates = requestUrlRepository.findById(url).get();
+                return new ResponseEntity<>(realEstates.getRealEstates(), HttpStatus.OK);
         }
-
 }
+
+// @CrossOrigin
+// @RequestMapping(value = "/realEstate", method = RequestMethod.GET)
+// public ResponseEntity<?> getHouses(@RequestParam(defaultValue = "forsale")
+// String type,
+// @RequestParam String city,
+// @RequestParam(defaultValue = "0") Integer minPrice,
+// @RequestParam(defaultValue = "100000000") Integer maxPrice,
+// @RequestParam(required = false) Integer rooms)
+// throws IOException {
+// return new ResponseEntity<>(realEstateService.searchHouses(type, city,
+// minPrice, maxPrice, rooms),
+// HttpStatus.OK);
+// }
+
+// @CrossOrigin
+// @RequestMapping(value = "/smartAgent", method = RequestMethod.GET)
+// public ResponseEntity<?> startAgent(@RequestParam(defaultValue = "forsale")
+// String type,
+// @RequestParam String city,
+// @RequestParam(defaultValue = "0") Integer minPrice,
+// @RequestParam(defaultValue = "100000000") Integer maxPrice,
+// @RequestParam(required = false) Integer rooms) throws IOException {
+
+// String url = "";
+// if (rooms instanceof Integer)
+// url = "https://www.yad2.co.il/realestate/" + type + "?city=" + city + "&" +
+// "rooms=" + rooms + "-" + rooms
+// + "&" + "price=" + minPrice + "-" + maxPrice;
+
+// else
+// url = "https://www.yad2.co.il/realestate/" + type + "?city=" + city
+// + "&" + "price=" + minPrice + "-" + maxPrice;
+
+// // check if the data exists
+// boolean exist = requestUrlRepository.existsById(url);
+
+// // if not exists:
+// if (!exist) {
+// RequestUrl newUrl = aRequestUrl().withId(url).build();
+// requestUrlRepository.insert(newUrl);
+
+// // step 1: scrape data
+// JSONArray data = scrapeService.scrapeYad2(url);
+
+// // step 2: save the data to the db
+
+// Query query = Query.query(Criteria.where("_id").is(url));
+// for (int i = 0; i < data.length(); i++) {
+// // make sure real estate doesn't already exist
+// Query query2 = Query.query(Criteria.where("realEstates.houseUrl")
+// .is(data.getJSONObject(i).getString("houseUrl")));
+// if (mongoTemplate.exists(query2, "request_url")) {
+// // System.out.println("Exists!");
+// }
+// // create new real estate object and add it to the db!
+// else {
+// RealEstate realEstate = new RealEstate(type, city, data.getJSONObject(i));
+// Update update = new Update().addToSet("realEstates", realEstate);
+// mongoTemplate.updateFirst(query, update, "request_url");
+// }
+// }
+// return new ResponseEntity<>(data.toString(), HttpStatus.OK);
+// }
+
+// // if exists:
+// RequestUrl realEstates = requestUrlRepository.findById(url).get();
+// return new ResponseEntity<>(realEstates.getRealEstates(), HttpStatus.OK);
+
+// }
+
+// @CrossOrigin
+// @RequestMapping(value = "/activateAgentThread", method = RequestMethod.POST)
+// public ResponseEntity<?> activateAgentThread(@RequestParam(defaultValue =
+// "forsale") String type,
+// @RequestParam String city,
+// @RequestParam(defaultValue = "0") Integer minPrice,
+// @RequestParam(defaultValue = "100000000") Integer maxPrice,
+// @RequestParam(required = false) Integer rooms) {
+
+// new Thread(() -> {
+// while (true) {
+// try {
+// Thread.sleep(10000);
+// String url = "";
+// if (rooms instanceof Integer)
+// url = "https://www.yad2.co.il/realestate/" + type + "?city=" + city
+// + "&" +
+// "rooms=" + rooms + "-" + rooms
+// + "&" + "price=" + minPrice + "-" + maxPrice;
+
+// else
+// url = "https://www.yad2.co.il/realestate/" + type + "?city=" + city
+// + "&" + "price=" + minPrice + "-" + maxPrice;
+
+// JSONArray data = scrapeService.scrapeYad2(url);
+// Query query = Query.query(Criteria.where("_id").is(url));
+// for (int i = 0; i < data.length(); i++) {
+// // make sure real estate doesn't already exist
+// Query query2 = Query.query(Criteria.where("realEstates.houseUrl")
+// .is(data.getJSONObject(i).getString("houseUrl")));
+// if (mongoTemplate.exists(query2, "request_url")) {
+// // System.out.println("Exists!");
+// }
+// // create new real estate object and add it to the db!
+// else {
+// RealEstate realEstate = new RealEstate(type, city,
+// data.getJSONObject(i));
+// Update update = new Update().addToSet("realEstates",
+// realEstate);
+// mongoTemplate.updateFirst(query, update, "request_url");
+// }
+// }
+// } catch (Exception e) {
+// e.printStackTrace();
+// }
+// }
+// }).start();
+// return new ResponseEntity<>("Agent started", HttpStatus.OK);
+// }
 
 // @RequestMapping(value = "/user/{name}", method = RequestMethod.GET)
 // public List<RealEstate> getRealEstate(@RequestParam String name) {

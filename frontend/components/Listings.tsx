@@ -15,15 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// import { z } from "zod";
 import { Input } from "./ui/input";
 import Link from "next/link";
-
-// const formSchema = z.object({
-//   username: z.string().min(2, {
-//     message: "Username must be at least 2 characters.",
-//   }),
-// });
 
 const cityDict: { [key: string]: string } = {
   חיפה: "4000",
@@ -43,55 +36,45 @@ const Listings = ({}) => {
   const [maxPrice, setMaxPrice] = useState<number | null>();
   const [rooms, setRooms] = useState<number | null>();
   const [displayedCity, setDisplayedCity] = useState<string>("");
+  const [searched, setSearch] = useState<boolean>(false);
 
   const getListings = async () => {
-      try {
-        console.log("get listings")
-        const data = await axios({
-          method: "get",
-          // url: "http://localhost:8080/api/realEstate",
-          url: "http://localhost:8080/api/smartAgent",
-          params: {
-            type: realEstateType,
-            city: cityDict[city],
-            minPrice: minPrice,
-            maxPrice: maxPrice,
-            rooms: rooms,
-          },
-        }).then((data) => {
-          setListings(data.data);
-          setDisplayedCity(city);
-          console.log("data fetching ended");
-        });
-      } catch (e) {
-        console.log(e);
-      }
-  };
-
-  async function activateAgent() {
     try {
-      await axios({
-        method: "post",
-        url:"http://localhost:8080/api/activateAgentThread",
+      console.log("get listings");
+      const data = await axios({
+        method: "get",
+        // url: "http://localhost:8080/api/realEstate",
+        // url: "http://localhost:8080/api/smartAgent",
+        url: "http://localhost:8080/api/agent",
         params: {
           type: realEstateType,
           city: cityDict[city],
           minPrice: minPrice,
           maxPrice: maxPrice,
           rooms: rooms,
-        }
-      })
-    } catch (e) {}
-  }
-
-  const handleSearch = () => {
-
-    getListings();
-    activateAgent();
-    const intervalId = setInterval(getListings, 10000)
+        },
+      }).then((data) => {
+        setListings(data.data);
+        setDisplayedCity(city);
+      });
+    } catch (e) {
+      console.log(e);
+    }
   };
 
-  console.log(listings)
+  useEffect(() => {
+    let intervalId: any;
+    console.log(searched);
+    if (searched) {
+      intervalId = setInterval(() => {
+        getListings();
+      }, 10000);
+    } else {
+      clearInterval(intervalId);
+    }
+
+    return () => clearInterval(intervalId);
+  }, [searched]);
 
   return (
     <div className="mt-5">
@@ -125,10 +108,19 @@ const Listings = ({}) => {
         </Select>
         <Combobox city={city} setCity={setCity} />
 
-        <Button className="flex gap-2" onClick={handleSearch}>
-          <p>חפש</p>
-          <Search />
-        </Button>
+        {searched ? (
+          <Button className="flex gap-2" onClick={() => setSearch(false)}>
+            <p>עצור חיפוש</p>
+          </Button>
+        ) : (
+          <Button
+            className="flex gap-2"
+            onClick={() => (setSearch(true), getListings())}
+          >
+            <p>חפש</p>
+            <Search />
+          </Button>
+        )}
       </div>
       <div className="flex gap-4 mt-4">
         <Input
@@ -148,7 +140,7 @@ const Listings = ({}) => {
         <Input
           type="number"
           placeholder="חדרים"
-          // @ts-ignore 
+          // @ts-ignore
           value={rooms}
           onChange={(event) => setRooms(parseInt(event.target.value, 10))}
         />
@@ -163,39 +155,42 @@ const Listings = ({}) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
         {listings &&
           Array.isArray(listings) &&
-          listings.map((item: any, index: number) => (
-            <Link
-              href={`https://www.yad2.co.il/realestate/item/${item?.houseUrl}`}
-              target="_blank"
-              key={index}
-              className="border hover:border-primary rounded-md pb-2 gap-2"
-            >
-              <HouseImage imageUrl={item.imgUrl} />
-              <div className="mt-2 flex-col gap-2">
-                <h2>{formatPrice(item?.price.toString())} ₪</h2>
-              </div>
-              <h2 className="flex gap-2 text-sm text-gray-400">
-                <MapPin className="h-4 w-4" />
-                {item?.neighborhood}, {item?.street}
-              </h2>
-              <div className="flex justify-center gap-3 mt-2">
-                <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                  קומה: {item?.floor}
+          listings
+            .slice()
+            .reverse()
+            .map((item: any, index: number) => (
+              <Link
+                href={`https://www.yad2.co.il/realestate/item/${item?.houseUrl}`}
+                target="_blank"
+                key={index}
+                className="border hover:border-primary rounded-md pb-2 gap-2"
+              >
+                <HouseImage imageUrl={item.imgUrl} />
+                <div className="mt-2 flex-col gap-2">
+                  <h2>{formatPrice(item?.price.toString())} ₪</h2>
+                </div>
+                <h2 className="flex gap-2 text-sm text-gray-400">
+                  <MapPin className="h-4 w-4" />
+                  {item?.neighborhood}, {item?.street}
                 </h2>
-                <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                  סוג: {item?.type}
-                </h2>
-                <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                  <MdOutlineBedroomParent />
-                  {item?.rooms}
-                </h2>
-                <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                  <Ruler className="h-4 w-4" />
-                  {item?.area}
-                </h2>
-              </div>
-            </Link>
-          ))}
+                <div className="flex justify-center gap-3 mt-2">
+                  <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                    קומה: {item?.floor}
+                  </h2>
+                  <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                    סוג: {item?.type}
+                  </h2>
+                  <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                    <MdOutlineBedroomParent />
+                    {item?.rooms}
+                  </h2>
+                  <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                    <Ruler className="h-4 w-4" />
+                    {item?.area}
+                  </h2>
+                </div>
+              </Link>
+            ))}
       </div>
     </div>
   );
