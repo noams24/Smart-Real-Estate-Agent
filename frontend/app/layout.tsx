@@ -6,8 +6,8 @@ import Header from "@/components/Header";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "סוכן חכם",
-  description: "סוכן חכם",
+  title: "סוכן דירות בזמן אמת",
+  description: "חיפוש דירות בזמן אמת",
 };
 
 export default function RootLayout({
