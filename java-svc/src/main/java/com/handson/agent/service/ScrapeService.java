@@ -1,7 +1,6 @@
 package com.handson.agent.service;
 
 import java.io.IOException;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import okhttp3.OkHttpClient;
@@ -22,7 +21,7 @@ public class ScrapeService {
 
                 return parseProductHtml(getHouseHtml(url));
         }
-
+        
         private JSONObject parseProductHtml(String html) {
                 Matcher matcher = PRODUCT_PATTERN.matcher(html);
                 JSONObject houses = new JSONObject();

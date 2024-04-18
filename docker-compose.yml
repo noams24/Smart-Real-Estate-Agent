@@ -1,5 +1,6 @@
 version: "3"
 services:
+
   mongo:
     image: mongo
     ports:
@@ -7,10 +8,10 @@ services:
     privileged: true
 
   appserver:
-    container_name: real-estate-agent-server
-    hostname: localhost
+    container_name: real-estate-agent
     image: real-estate-agent-server
     build:
+      context: /java-svc/.
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -28,3 +29,13 @@ services:
       - .:/frontend/app
       - /frontend/app/node_modules
       - /frontend/app/.next
+
+  fastapi:
+    image: real-estate-agent-fastapi
+    build:
+      context: /python-svc/.
+      dockerfile: Dockerfile
+    command: sh -c "uvicorn main:app --reload --port=8000 --host=0.0.0.0"
+    ports:
+      - 8000:8000
+    

@@ -18,9 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.handson.agent.model.RealEstate;
 import com.handson.agent.model.RequestUrl;
 import com.handson.agent.repo.RequestUrlRepositry;
-import com.handson.agent.service.RealEstateService;
+// import com.handson.agent.service.RealEstateService;
 import com.handson.agent.service.ScrapeService;
-import com.handson.agent.service.SmartAgentService;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -32,11 +31,8 @@ import static com.handson.agent.model.RequestUrl.urlBuilder.aRequestUrl;
 @RequestMapping("/api")
 public class RealEstateController {
 
-        @Autowired
-        RealEstateService realEstateService;
-
-        @Autowired
-        SmartAgentService smartAgentService;
+        // @Autowired
+        // RealEstateService realEstateService;
 
         @Autowired
         ScrapeService scrapeService;

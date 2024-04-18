@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "./ui/input";
 import Link from "next/link";
+import { FaMagic } from "react-icons/fa";
 
 const cityDict: { [key: string]: string } = {
   חיפה: "4000",
@@ -24,6 +25,11 @@ const cityDict: { [key: string]: string } = {
   אשדוד: "0070",
   אשקלון: "7100",
   "רמת גן": "8600",
+  "ירושלים": "3000",
+  "באר שבע": "9000",
+  "נתניה": "7400",
+  "פתח תקווה": "7900",
+  "ראשון לציון": "8300",
 };
 
 const Listings = ({}) => {
@@ -38,9 +44,11 @@ const Listings = ({}) => {
   const [displayedCity, setDisplayedCity] = useState<string>("");
   const [searched, setSearch] = useState<boolean>(false);
 
+  const [predictedPricedData, setPredict] = useState<Object>({})
+
   const getListings = async () => {
     try {
-      console.log("get listings");
+      // console.log("get listings");
       const data = await axios({
         method: "get",
         // url: "http://localhost:8080/api/realEstate",
@@ -64,7 +72,6 @@ const Listings = ({}) => {
 
   useEffect(() => {
     let intervalId: any;
-    console.log(searched);
     if (searched) {
       intervalId = setInterval(() => {
         getListings();
@@ -75,6 +82,28 @@ const Listings = ({}) => {
 
     return () => clearInterval(intervalId);
   }, [searched]);
+
+
+const handlePredictPrice = async (token: string) => {
+  const data = await axios({
+    method: "get",
+    url: "http://localhost:8000/predict-house-all2",
+    params: {
+      token:token
+    },
+  }).then((data) => {
+    const formatedData = {
+      salePrice: formatPrice2(data.data[0]),
+      rentPrice: formatPrice2(data.data[1]),
+      capRate: data.data[2]
+    }
+    const newData = predictedPricedData
+    //@ts-ignore
+    newData[token] = formatedData
+    setPredict(newData)
+    
+  });
+}
 
   return (
     <div className="mt-5">
@@ -159,37 +188,55 @@ const Listings = ({}) => {
             .slice()
             .reverse()
             .map((item: any, index: number) => (
-              <Link
-                href={`https://www.yad2.co.il/realestate/item/${item?.houseUrl}`}
-                target="_blank"
+              <div
                 key={index}
                 className="border hover:border-primary rounded-md pb-2 gap-2"
               >
-                <HouseImage imageUrl={item.imgUrl} />
-                <div className="mt-2 flex-col gap-2">
-                  <h2>{formatPrice(item?.price.toString())} ₪</h2>
+                <Link
+                  href={`https://www.yad2.co.il/realestate/item/${item?.houseUrl}`}
+                  target="_blank"
+                >
+                  <HouseImage imageUrl={item.imgUrl} />
+                  <div className="mt-2 flex-col gap-2">
+                    <h2>{formatPrice(item?.price.toString())} ₪</h2>
+                  </div>
+                  <h2 className="flex gap-2 text-sm text-gray-400">
+                    <MapPin className="h-4 w-4" />
+                    {item?.neighborhood}, {item?.street}
+                  </h2>
+                  <div className="flex justify-center gap-3 mt-2">
+                    <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                      קומה: {item?.floor}
+                    </h2>
+                    {/* <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                      סוג: {item?.type}
+                    </h2> */}
+                    <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                      <MdOutlineBedroomParent />
+                      {item?.rooms}
+                    </h2>
+                    <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                      <Ruler className="h-4 w-4" />
+                      {item?.area}
+                    </h2>
+                  </div>
+                </Link>
+                <div className="mt-2 ">
+                  <Button onClick={()=> handlePredictPrice(item.houseUrl)} variant={"ghost"}>
+                    <FaMagic />
+                  </Button>
+                  {predictedPricedData.hasOwnProperty(item.houseUrl) && 
+                  <div>
+                    {/*@ts-ignore */}
+                    <p>מחיר: {predictedPricedData[item.houseUrl]['salePrice']}</p>
+                    {/*@ts-ignore */}
+                    <p>מחיר השכרה: {predictedPricedData[item.houseUrl]['rentPrice']}</p>
+                    {/*@ts-ignore */}
+                    <p>שיעור תשואה: {predictedPricedData[item.houseUrl]['capRate']}%</p>
+                  </div>
+                  }
                 </div>
-                <h2 className="flex gap-2 text-sm text-gray-400">
-                  <MapPin className="h-4 w-4" />
-                  {item?.neighborhood}, {item?.street}
-                </h2>
-                <div className="flex justify-center gap-3 mt-2">
-                  <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                    קומה: {item?.floor}
-                  </h2>
-                  <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                    סוג: {item?.type}
-                  </h2>
-                  <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                    <MdOutlineBedroomParent />
-                    {item?.rooms}
-                  </h2>
-                  <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                    <Ruler className="h-4 w-4" />
-                    {item?.area}
-                  </h2>
-                </div>
-              </Link>
+              </div>
             ))}
       </div>
     </div>
@@ -206,4 +253,9 @@ function formatPrice(priceString: string): string {
   const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
   return formattedInteger + fractionalPart;
+}
+
+function formatPrice2(priceString: string): string {
+  const number = parseFloat(priceString);
+  return number.toLocaleString('en-US');
 }

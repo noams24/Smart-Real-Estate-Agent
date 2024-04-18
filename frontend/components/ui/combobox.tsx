@@ -37,9 +37,30 @@ const cities = [
     label: "אשקלון",
   },
   {
+    value: "ראשון לציון",
+    label: "ראשון לציון",
+  },
+  {
     value: "רמת גן",
     label: "רמת גן",
   },
+  {
+    value: "באר שבע",
+    label: "באר שבע",
+  },
+  {
+    value: "נתניה",
+    label: "נתניה",
+  },
+  {
+    value: "פתח תקווה",
+    label: "פתח תקווה",
+  },
+  {
+    value: "ירושלים",
+    label: "ירושלים",
+  },
+
 ];
 
 interface ComboboxProps {
