@@ -25,7 +25,7 @@ public class ScrapeService {
         private JSONObject parseProductHtml(String html) {
                 Matcher matcher = PRODUCT_PATTERN.matcher(html);
                 JSONObject houses = new JSONObject();
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < 30; i++) {
                         if (matcher.find()) {
                                 if (!houses.has(matcher.group(5))) {
                                         JSONObject house = new JSONObject();

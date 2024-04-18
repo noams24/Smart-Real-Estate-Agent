@@ -7,7 +7,6 @@ import com.handson.agent.utils.Dates;
 import java.util.Date;
 import org.joda.time.LocalDateTime;
 import org.json.JSONObject;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "realEstate")
@@ -55,18 +54,8 @@ public class RealEstate {
         this.area = jsonObject.getInt("area");
         this.floor = jsonObject.getInt("floor");
         this.houseUrl = jsonObject.getString("houseUrl");
-        // this.createdAt = Dates.nowUTC();
     }
 
-    
-
-    // public String getId() {
-    //     return id;
-    // }
-
-    // public void setId(String id) {
-    //     this.id = id;
-    // }
 
     @Override
     public String toString() {
