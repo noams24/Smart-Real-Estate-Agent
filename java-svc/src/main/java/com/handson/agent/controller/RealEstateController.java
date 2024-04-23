@@ -6,6 +6,8 @@ import java.util.Set;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -14,15 +16,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.client.RestTemplate;
 import com.handson.agent.model.RealEstate;
 import com.handson.agent.model.RequestUrl;
 import com.handson.agent.repo.RequestUrlRepositry;
-// import com.handson.agent.service.RealEstateService;
 import com.handson.agent.service.ScrapeService;
+import com.handson.agent.service.PredictService;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.http.HttpMethod;
 
 import static com.handson.agent.model.RequestUrl.urlBuilder.aRequestUrl;
 
@@ -30,9 +33,6 @@ import static com.handson.agent.model.RequestUrl.urlBuilder.aRequestUrl;
 @RestController
 @RequestMapping("/api")
 public class RealEstateController {
-
-        // @Autowired
-        // RealEstateService realEstateService;
 
         @Autowired
         ScrapeService scrapeService;
@@ -42,6 +42,9 @@ public class RealEstateController {
 
         @Autowired
         private MongoTemplate mongoTemplate;
+
+        @Autowired
+        private PredictService predictService;
 
         @CrossOrigin
         @RequestMapping(value = "/agent", method = RequestMethod.GET)
@@ -67,21 +70,20 @@ public class RealEstateController {
                 // if data not exists, scrape and return data:
                 if (!exist) {
                         JSONObject data = scrapeService.scrapeYad2(url);
-
                         // save to db:
                         RequestUrl newUrl = aRequestUrl().withId(url).build();
                         requestUrlRepository.insert(newUrl);
                         Query query = Query.query(Criteria.where("_id").is(url));
 
-                        // Iterable<JSONObject> values = data.valu
                         Set<String> keys = data.keySet();
+                        JSONObject predictedPrice = predictService.predictPrice(keys);
                         for (String key : keys) {
                                 JSONObject value = (JSONObject) data.get(key);
-                                RealEstate realEstate = new RealEstate(type, city, value);
+                                RealEstate realEstate = new RealEstate(type, city, value,
+                                                predictedPrice.getJSONObject(key));
                                 Update update = new Update().addToSet("realEstates", realEstate);
                                 mongoTemplate.updateFirst(query, update, "request_url");
                         }
-                        // return new ResponseEntity<>(data.toString(), HttpStatus.OK);
                 } else {
                         // if data exists, return data and update new real estates
                         new Thread(() -> {
@@ -100,13 +102,15 @@ public class RealEstateController {
                                         Query query = Query.query(Criteria.where("_id").is(url1));
 
                                         Set<String> keys = data.keySet();
+                                        JSONObject predictedPrice = predictService.predictPrice(keys);
                                         for (String key : keys) {
                                                 JSONObject value = (JSONObject) data.get(key);
                                                 // make sure real estate doesn't already exist
                                                 Query query2 = Query.query(Criteria.where("realEstates.houseUrl")
                                                                 .is(value.getString("houseUrl")));
                                                 if (!mongoTemplate.exists(query2, "request_url")) {
-                                                        RealEstate realEstate = new RealEstate(type, city, value);
+                                                        RealEstate realEstate = new RealEstate(type, city, value,
+                                                                        predictedPrice.getJSONObject(key));
                                                         Update update = new Update().addToSet("realEstates",
                                                                         realEstate);
                                                         mongoTemplate.updateFirst(query, update, "request_url");

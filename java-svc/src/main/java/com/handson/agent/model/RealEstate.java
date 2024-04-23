@@ -21,29 +21,60 @@ public class RealEstate {
     private Integer rooms;
     private Integer area;
     private Integer floor;
-    
+    private Integer predictedSalePrice;
+    private Integer predictedRentPrice;
+    private String predictedCapRate;
+
+    public Integer getPredictedSalePrice() {
+        return predictedSalePrice;
+    }
+
+    public void setPredictedSalePrice(Integer predictedSalePrice) {
+        this.predictedSalePrice = predictedSalePrice;
+    }
+
+    public Integer getPredictedRentPrice() {
+        return predictedRentPrice;
+    }
+
+    public void setPredictedRentPrice(Integer predictedRentPrice) {
+        this.predictedRentPrice = predictedRentPrice;
+    }
+
+    public String getPredictedCapRate() {
+        return predictedCapRate;
+    }
+
+    public void setPredictedCapRate(String predictedCapRate) {
+        this.predictedCapRate = predictedCapRate;
+    }
+
     // @Indexed(unique = true)
     private String houseUrl;
 
-
-    public RealEstate() {}
-
-    public RealEstate(String type, String neighborhood, String street, String city, String imgUrl, Integer price,
-            Integer rooms, Integer area, Integer floor, String houseUrl) {
-
-                this.type = type;
-                this.neighborhood = neighborhood;
-                this.street = street;
-                this.city = city;
-                this.imgUrl = imgUrl;
-                this.price = price;
-                this.rooms = rooms;
-                this.area = area;
-                this.floor = floor;
-                this.houseUrl = houseUrl;
+    public RealEstate() {
     }
 
-    public RealEstate(String type, String city, JSONObject jsonObject) {
+    public RealEstate(String type, String neighborhood, String street, String city, String imgUrl, Integer price,
+            Integer rooms, Integer area, Integer floor, String houseUrl, Integer predictedSalePrice,
+            Integer predictedRentPrice, String predictedCapRate) {
+
+        this.type = type;
+        this.neighborhood = neighborhood;
+        this.street = street;
+        this.city = city;
+        this.imgUrl = imgUrl;
+        this.price = price;
+        this.rooms = rooms;
+        this.area = area;
+        this.floor = floor;
+        this.houseUrl = houseUrl;
+        this.predictedSalePrice = predictedSalePrice;
+        this.predictedRentPrice = predictedRentPrice;
+        this.predictedCapRate =  predictedCapRate;
+    }
+
+    public RealEstate(String type, String city, JSONObject jsonObject, JSONObject predictedData) {
         this.type = type;
         this.neighborhood = jsonObject.getString("neighborhood");
         this.street = jsonObject.getString("street");
@@ -54,14 +85,20 @@ public class RealEstate {
         this.area = jsonObject.getInt("area");
         this.floor = jsonObject.getInt("floor");
         this.houseUrl = jsonObject.getString("houseUrl");
-    }
+        try {
+            this.predictedSalePrice = predictedData.getInt("salePrice");
+            this.predictedRentPrice = predictedData.getInt("rentPrice");
+            this.predictedCapRate = predictedData.getString("capRate");
+        } catch (Exception e) {
 
+        }
+    }
 
     @Override
     public String toString() {
         return "RealEstate [type=" + type + ", neighborhood=" + neighborhood + ", city=" + city + ", imgUrl=" + imgUrl
                 + ", price=" + price + ", rooms=" + rooms + ", area=" + area + ", floor=" + floor + ", houseUrl="
-                + houseUrl + ", createdAt=" + createdAt + "]";
+                + houseUrl + ", createdAt=" + createdAt + "]" + "predictedPrice= " + predictedSalePrice;
     }
 
     public String getType() {

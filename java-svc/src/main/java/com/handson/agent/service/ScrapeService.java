@@ -12,6 +12,7 @@ import java.util.regex.Matcher;
 @Service
 public class ScrapeService {
 
+        public static final int TOTAL_REAL_ESTATES_TO_SCRAPE = 15;
         public static final Pattern PRODUCT_PATTERN = Pattern.compile(
                         "neighborhood\":\\{\"text\":\"([^\"]+)\"},\"street\":\\{\"text\":\"([^\"]+)\"[^0-9]+[^:]+:([0-9]).*?(?=price)price\":([0-9]+),\"token\":\"([^\"]+).*?(?=property)property\":\\{\"text\":\"([א-ת]+)[^:]+:([0-9])[^:]+:([0-9]+).*?(?=Image)Image\":\"([^\"]+)");
         OkHttpClient client = new OkHttpClient().newBuilder().build();
@@ -25,7 +26,7 @@ public class ScrapeService {
         private JSONObject parseProductHtml(String html) {
                 Matcher matcher = PRODUCT_PATTERN.matcher(html);
                 JSONObject houses = new JSONObject();
-                for (int i = 0; i < 30; i++) {
+                for (int i = 0; i < TOTAL_REAL_ESTATES_TO_SCRAPE; i++) {
                         if (matcher.find()) {
                                 if (!houses.has(matcher.group(5))) {
                                         JSONObject house = new JSONObject();

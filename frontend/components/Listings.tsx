@@ -11,6 +11,7 @@ import Combobox from "./ui/combobox";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -25,9 +26,9 @@ const cityDict: { [key: string]: string } = {
   אשדוד: "0070",
   אשקלון: "7100",
   "רמת גן": "8600",
-  "ירושלים": "3000",
+  ירושלים: "3000",
   "באר שבע": "9000",
-  "נתניה": "7400",
+  נתניה: "7400",
   "פתח תקווה": "7900",
   "ראשון לציון": "8300",
 };
@@ -43,16 +44,14 @@ const Listings = ({}) => {
   const [rooms, setRooms] = useState<number | null>();
   const [displayedCity, setDisplayedCity] = useState<string>("");
   const [searched, setSearch] = useState<boolean>(false);
+  const [sortBy, setSort] = useState<string>("תאריך העלאה");
 
-  const [predictedPricedData, setPredict] = useState<Object>({})
+  // const [predictedPricedData, setPredict] = useState<Object>({})
 
-  const getListings = async () => {
+  const getListings = async (sort: string) => {
     try {
-      // console.log("get listings");
       const data = await axios({
         method: "get",
-        // url: "http://localhost:8080/api/realEstate",
-        // url: "http://localhost:8080/api/smartAgent",
         url: "http://localhost:8080/api/agent",
         params: {
           type: realEstateType,
@@ -62,7 +61,8 @@ const Listings = ({}) => {
           rooms: rooms,
         },
       }).then((data) => {
-        setListings(data.data);
+        const sortedData = sortData(data.data, sort);
+        setListings(sortedData);
         setDisplayedCity(city);
       });
     } catch (e) {
@@ -73,37 +73,39 @@ const Listings = ({}) => {
   useEffect(() => {
     let intervalId: any;
     if (searched) {
+      getListings(sortBy);
       intervalId = setInterval(() => {
-        getListings();
-      }, 10000);
+        getListings(sortBy);
+      }, 4000);
     } else {
       clearInterval(intervalId);
     }
 
     return () => clearInterval(intervalId);
-  }, [searched]);
+  }, [searched, sortBy]);
 
-
-const handlePredictPrice = async (token: string) => {
-  const data = await axios({
-    method: "get",
-    url: "http://localhost:8000/predict-house-all2",
-    params: {
-      token:token
-    },
-  }).then((data) => {
-    const formatedData = {
-      salePrice: formatPrice2(data.data[0]),
-      rentPrice: formatPrice2(data.data[1]),
-      capRate: data.data[2]
-    }
-    const newData = predictedPricedData
-    //@ts-ignore
-    newData[token] = formatedData
-    setPredict(newData)
-    
-  });
-}
+  const sortData = (data: any, sort: string) => {
+    if (sort === "date") {
+      //@ts-ignore
+      return data.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateA.getTime() - dateB.getTime();
+      });
+    } else if (sort === "price") {
+      //@ts-ignore
+      return data.sort((a, b) => a.price - b.price);
+    } else if (sort === "agentCapRate") {
+      //@ts-ignore
+      return data.sort((a, b) => a.predictedCapRate - b.predictedCapRate);
+    } else if (sort === "gap") {
+      return data.sort(
+        //@ts-ignore
+        (a, b) =>
+          a.predictedSalePrice - a.price - (b.predictedSalePrice - b.price)
+      );
+    } else return data;
+  };
 
   return (
     <div className="mt-5">
@@ -142,10 +144,7 @@ const handlePredictPrice = async (token: string) => {
             <p>עצור חיפוש</p>
           </Button>
         ) : (
-          <Button
-            className="flex gap-2"
-            onClick={() => (setSearch(true), getListings())}
-          >
+          <Button className="flex gap-2" onClick={() => setSearch(true)}>
             <p>חפש</p>
             <Search />
           </Button>
@@ -173,6 +172,21 @@ const handlePredictPrice = async (token: string) => {
           value={rooms}
           onChange={(event) => setRooms(parseInt(event.target.value, 10))}
         />
+      </div>
+      <div className="mt-7">
+        <Select onValueChange={(e) => setSort(e)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="מיין לפי..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="price">מחיר</SelectItem>
+              <SelectItem value="date">תאריך העלאה</SelectItem>
+              <SelectItem value="agentCapRate">תשואה גדולה</SelectItem>
+              <SelectItem value="gap">פער גדול</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
       {displayedCity && (
         <h1 className="my-5 text-xl font-extrabold">
@@ -222,19 +236,27 @@ const handlePredictPrice = async (token: string) => {
                   </div>
                 </Link>
                 <div className="mt-2 ">
-                  <Button onClick={()=> handlePredictPrice(item.houseUrl)} variant={"ghost"}>
-                    <FaMagic />
-                  </Button>
-                  {predictedPricedData.hasOwnProperty(item.houseUrl) && 
-                  <div>
-                    {/*@ts-ignore */}
-                    <p>מחיר: {predictedPricedData[item.houseUrl]['salePrice']}</p>
-                    {/*@ts-ignore */}
-                    <p>מחיר השכרה: {predictedPricedData[item.houseUrl]['rentPrice']}</p>
-                    {/*@ts-ignore */}
-                    <p>שיעור תשואה: {predictedPricedData[item.houseUrl]['capRate']}%</p>
-                  </div>
-                  }
+                  <p className="font-bold text-lg">לפי הסוכן:</p>
+                  <p>
+                    מחיר:{" "}
+                    {item?.predictedSalePrice === 0
+                      ? "לא ידוע"
+                      : formatPrice2(item?.predictedSalePrice)}
+                  </p>
+
+                  <p>
+                    מחיר השכרה:{" "}
+                    {item?.predictedRentPrice === 0
+                      ? "לא ידוע"
+                      : formatPrice2(item?.predictedRentPrice)}
+                  </p>
+
+                  <p>
+                    שיעור תשואה:{" "}
+                    {item?.predictedCapRate === null
+                      ? "לא ידוע"
+                      : item?.predictedCapRate + "%"}
+                  </p>
                 </div>
               </div>
             ))}
@@ -257,5 +279,44 @@ function formatPrice(priceString: string): string {
 
 function formatPrice2(priceString: string): string {
   const number = parseFloat(priceString);
-  return number.toLocaleString('en-US');
+  return number.toLocaleString("en-US");
 }
+
+{
+  /* <Button onClick={()=> handlePredictPrice(item.houseUrl)} variant={"ghost"}>
+                    <FaMagic />
+                  </Button>
+                  {predictedPricedData.hasOwnProperty(item.houseUrl) && 
+                  <div>
+              
+                    <p>מחיר: {predictedPricedData[item.houseUrl]['salePrice']}</p>
+                 
+                    <p>מחיר השכרה: {predictedPricedData[item.houseUrl]['rentPrice']}</p>
+
+                    <p>שיעור תשואה: {predictedPricedData[item.houseUrl]['capRate']}%</p>
+                  </div>
+                  } */
+}
+
+// const handlePredictPrice = async (token: string) => {
+//   const data = await axios({
+//     method: "get",
+//     url: "http://localhost:8000/predict-house-all2",
+//     params: {
+//       token:token
+//     },
+//   }).then((data) => {
+//     const formatedData = {
+//       salePrice: formatPrice2(data.data[0]),
+//       rentPrice: formatPrice2(data.data[1]),
+//       capRate: data.data[2]
+//     }
+//     const newData = predictedPricedData
+
+//     newData[token] = formatedData
+//     setPredict(newData)
+
+//   });
+// }
+
+// console.log(listings)
