@@ -10,9 +10,6 @@ public class RequestUrl {
     @Id
     private String id;
 
-    // @Indexed(unique = true)
-    // private String requestUrl;
-
     private List<RealEstate> realEstates;
 
     public String getId() {

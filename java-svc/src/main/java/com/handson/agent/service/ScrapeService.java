@@ -1,6 +1,7 @@
 package com.handson.agent.service;
 
 import java.io.IOException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import okhttp3.OkHttpClient;
@@ -22,7 +23,7 @@ public class ScrapeService {
 
                 return parseProductHtml(getHouseHtml(url));
         }
-        
+
         private JSONObject parseProductHtml(String html) {
                 Matcher matcher = PRODUCT_PATTERN.matcher(html);
                 JSONObject houses = new JSONObject();
@@ -39,8 +40,6 @@ public class ScrapeService {
                                         house.put("rooms", matcher.group(7));
                                         house.put("area", matcher.group(8));
                                         house.put("imgUrl", matcher.group(9));
-
-                                        houses.put(matcher.group(5), house);
                                 }
                         } else
                                 break;
@@ -78,5 +77,62 @@ public class ScrapeService {
                                 .build();
                 Response response = client.newCall(request).execute();
                 return response.body().string();
+        }
+
+        public JSONObject getHouseData(String url, String type, String city)
+                        throws IOException {
+                OkHttpClient client = new OkHttpClient().newBuilder().build();
+
+                Request request = new Request.Builder()
+                                .url(url)
+                                .method("GET", null)
+                                .build();
+                Response response = client.newCall(request).execute();
+                JSONObject rawData = new JSONObject(response.body().string());
+                JSONArray realEstates = rawData.getJSONObject("data").getJSONObject("feed").getJSONArray("feed_items");
+                JSONObject result = new JSONObject();
+                for (int i = 0; i < 15; i++) {
+                        try {
+                                JSONObject singleResult = new JSONObject();
+                                JSONObject realEstate = realEstates.getJSONObject(i);
+                                singleResult.put("city", city);
+                                // singleResult.put("city", realEstate.getString("city"));
+                                try {
+                                        singleResult.put("neighborhood", realEstate.getString("neighborhood"));
+                                } catch (Exception e) {
+                                        singleResult.put("neighborhood", "");
+                                }
+                                try {
+                                        singleResult.put("street", realEstate.getString("street"));
+                                } catch (Exception e) {
+                                        singleResult.put("street", "");
+                                }
+                                try {
+                                        singleResult.put("floor", String.valueOf(realEstate.getJSONArray("row_4")
+                                                        .getJSONObject(1).getNumber("value")));
+                                } catch (Exception e) {
+                                        singleResult.put("floor",
+                                                        realEstate.getJSONArray("row_4").getJSONObject(1)
+                                                                        .getString("value"));
+                                }
+                                singleResult.put("price", realEstate.getString("price"));
+                                singleResult.put("houseUrl", realEstate.getString("link_token"));
+                                singleResult.put("type", type);
+                                singleResult.put("rooms",
+                                                realEstate.getJSONArray("row_4").getJSONObject(0).getNumber("value"));
+                                singleResult.put("area",
+                                                realEstate.getJSONArray("row_4").getJSONObject(2).getNumber("value"));
+
+                                singleResult.put("imgUrl", realEstate.getString("img_url"));
+                                try {
+                                        singleResult.put("coordinates", realEstate.getJSONObject("coordinates"));
+                                } catch (Exception e) {
+                                        singleResult.put("coordinates", "");
+                                }
+                                result.put(singleResult.getString("houseUrl"), singleResult);
+                        } catch (Exception e) {
+                        }
+                }
+                return result;
         }
 }

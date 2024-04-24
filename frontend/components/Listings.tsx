@@ -18,7 +18,11 @@ import {
 } from "@/components/ui/select";
 import { Input } from "./ui/input";
 import Link from "next/link";
-import { FaMagic } from "react-icons/fa";
+import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
+import GoogleMapsSection from "./GoogleMapsSection";
+import { coordinates } from "@/lib/coor";
+import { FaExternalLinkAlt } from "react-icons/fa";
+import { set } from "react-hook-form";
 
 const cityDict: { [key: string]: string } = {
   חיפה: "4000",
@@ -35,16 +39,19 @@ const cityDict: { [key: string]: string } = {
 
 const Listings = ({}) => {
   const [listings, setListings] = useState<any>(null);
-
+  const [loading, setLoading] = useState<boolean>(false)
   const [realEstateType, setType] = useState<string>("forsale");
   const [city, setCity] = useState<string>("");
-
   const [minPrice, setMinPrice] = useState<number | null>();
   const [maxPrice, setMaxPrice] = useState<number | null>();
   const [rooms, setRooms] = useState<number | null>();
   const [displayedCity, setDisplayedCity] = useState<string>("");
   const [searched, setSearch] = useState<boolean>(false);
   const [sortBy, setSort] = useState<string>("תאריך העלאה");
+  const [center, setCenter] = useState({
+    lat: 32.0714,
+    lng: 34.7644,
+  });
 
   // const [predictedPricedData, setPredict] = useState<Object>({})
 
@@ -63,6 +70,7 @@ const Listings = ({}) => {
       }).then((data) => {
         const sortedData = sortData(data.data, sort);
         setListings(sortedData);
+        setLoading(false)
         setDisplayedCity(city);
       });
     } catch (e) {
@@ -73,6 +81,8 @@ const Listings = ({}) => {
   useEffect(() => {
     let intervalId: any;
     if (searched) {
+      //@ts-ignore
+      setCenter(coordinates[city]);
       getListings(sortBy);
       intervalId = setInterval(() => {
         getListings(sortBy);
@@ -107,159 +117,190 @@ const Listings = ({}) => {
     } else return data;
   };
 
-  return (
-    <div className="mt-5">
-      <div className="flex gap-4">
-        <Select
-          onValueChange={(event) => {
-            setType(event);
-          }}
-        >
-          <SelectTrigger className="w-[100px]">
-            <SelectValue placeholder="מכירה" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem
-              onChange={() => {
-                setType("forsale");
-              }}
-              value="forsale"
-            >
-              מכירה
-            </SelectItem>
-            <SelectItem
-              onChange={() => {
-                setType("rent");
-              }}
-              value="rent"
-            >
-              השכרה
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <Combobox city={city} setCity={setCity} />
+  const handleCoordinates = (latitude: number, longitude: number) => {
+    setCenter({
+      lat: latitude,
+      lng: longitude,
+    });
+  };
 
-        {searched ? (
-          <Button className="flex gap-2" onClick={() => setSearch(false)}>
-            <p>עצור חיפוש</p>
-          </Button>
-        ) : (
-          <Button className="flex gap-2" onClick={() => setSearch(true)}>
-            <p>חפש</p>
-            <Search />
-          </Button>
-        )}
-      </div>
-      <div className="flex gap-4 mt-4">
-        <Input
-          type="number"
-          placeholder="מחיר מינימלי"
-          // @ts-ignore
-          value={minPrice}
-          onChange={(event) => setMinPrice(parseInt(event.target.value, 10))}
-        />
-        <Input
-          type="number"
-          placeholder="מחיר מקסימלי"
-          // @ts-ignore
-          value={maxPrice}
-          onChange={(event) => setMaxPrice(parseInt(event.target.value, 10))}
-        />
-        <Input
-          type="number"
-          placeholder="חדרים"
-          // @ts-ignore
-          value={rooms}
-          onChange={(event) => setRooms(parseInt(event.target.value, 10))}
-        />
-      </div>
-      <div className="mt-7">
-        <Select onValueChange={(e) => setSort(e)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="מיין לפי..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="price">מחיר</SelectItem>
-              <SelectItem value="date">תאריך העלאה</SelectItem>
-              <SelectItem value="agentCapRate">תשואה גדולה</SelectItem>
-              <SelectItem value="gap">פער גדול</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-      {displayedCity && (
-        <h1 className="my-5 text-xl font-extrabold">
-          נדלן
-          {realEstateType === "forsale" ? " למכירה" : " להשכרה"} ב-{" "}
-          {displayedCity}
-        </h1>
-      )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-        {listings &&
-          Array.isArray(listings) &&
-          listings
-            .slice()
-            .reverse()
-            .map((item: any, index: number) => (
-              <div
-                key={index}
-                className="border hover:border-primary rounded-md pb-2 gap-2"
+  return (
+    <div className="flex justify-between gap-8">
+      <div>
+        <div className="flex gap-4">
+          <Select
+            onValueChange={(event) => {
+              setType(event);
+            }}
+          >
+            <SelectTrigger className="w-[100px]">
+              <SelectValue placeholder="מכירה" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                onChange={() => {
+                  setType("forsale");
+                }}
+                value="forsale"
               >
-                <Link
-                  href={`https://www.yad2.co.il/realestate/item/${item?.houseUrl}`}
-                  target="_blank"
-                >
-                  <HouseImage imageUrl={item.imgUrl} />
-                  <div className="mt-2 flex-col gap-2">
-                    <h2>{formatPrice(item?.price.toString())} ₪</h2>
-                  </div>
-                  <h2 className="flex gap-2 text-sm text-gray-400">
-                    <MapPin className="h-4 w-4" />
-                    {item?.neighborhood}, {item?.street}
-                  </h2>
-                  <div className="flex justify-center gap-3 mt-2">
-                    <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                      קומה: {item?.floor}
-                    </h2>
-                    {/* <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                מכירה
+              </SelectItem>
+              <SelectItem
+                onChange={() => {
+                  setType("rent");
+                }}
+                value="rent"
+              >
+                השכרה
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Combobox city={city} setCity={setCity} />
+
+          {searched ? (
+            <Button className="flex gap-2" onClick={() => setSearch(false)}>
+              <p>עצור חיפוש</p>
+            </Button>
+          ) : (
+            <Button className="flex gap-2" onClick={() => {setLoading(true), setSearch(true)}}>
+              <p>חפש</p>
+              <Search />
+            </Button>
+          )}
+        </div>
+        <div className="flex gap-4 mt-4">
+          <Input
+            type="number"
+            placeholder="מחיר מינימלי"
+            // @ts-ignore
+            value={minPrice}
+            onChange={(event) => setMinPrice(parseInt(event.target.value, 10))}
+          />
+          <Input
+            type="number"
+            placeholder="מחיר מקסימלי"
+            // @ts-ignore
+            value={maxPrice}
+            onChange={(event) => setMaxPrice(parseInt(event.target.value, 10))}
+          />
+          <Input
+            type="number"
+            placeholder="חדרים"
+            // @ts-ignore
+            value={rooms}
+            onChange={(event) => setRooms(parseInt(event.target.value, 10))}
+          />
+        </div>
+        <div className="mt-7">
+          <Select onValueChange={(e) => setSort(e)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="מיין לפי..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="price">מחיר</SelectItem>
+                <SelectItem value="date">תאריך העלאה</SelectItem>
+                <SelectItem value="agentCapRate">תשואה גדולה</SelectItem>
+                <SelectItem value="gap">פער גדול</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        {loading === true && <h2 className="font-bold text-xl mt-3">טוען...</h2>}
+        {displayedCity && (
+          <h1 className="my-5 text-xl font-extrabold">
+            נדלן
+            {realEstateType === "forsale" ? " למכירה" : " להשכרה"} ב-{" "}
+            {displayedCity}
+          </h1>
+        )}
+        {/* <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"> */}
+        <div className="max-h-[60dvh] overflow-y-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            {listings &&
+              Array.isArray(listings) &&
+              listings
+                .slice()
+                .reverse()
+                .map((item: any, index: number) => (
+                  <div
+                    key={index}
+                    className="border hover:border-primary rounded-md pb-2"
+                  >
+                    {/* <Link
+                    href={`https://www.yad2.co.il/realestate/item/${item?.houseUrl}`}
+                    target="_blank"
+                  > */}
+                    <button className="w-full"
+                      onClick={() =>
+                        handleCoordinates(item.latitude, item.longitude)
+                      }
+                    >
+                      <HouseImage imageUrl={item.imgUrl} />
+                      <div className="mt-2 flex-col gap-2">
+                        <h2>{item?.price}</h2>
+                        {/* <h2>{formatPrice(item?.price.toString())} ₪</h2> */}
+                      </div>
+                      <h2 className="flex gap-2 text-sm text-gray-400">
+                        <MapPin className="h-4 w-4" />
+                        {item?.neighborhood}, {item?.street}
+                      </h2>
+                      <div className="flex justify-center gap-3 mt-2">
+                        <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                          קומה: {item?.floor}
+                        </h2>
+                        {/* <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
                       סוג: {item?.type}
                     </h2> */}
-                    <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                      <MdOutlineBedroomParent />
-                      {item?.rooms}
-                    </h2>
-                    <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                      <Ruler className="h-4 w-4" />
-                      {item?.area}
-                    </h2>
+                        <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                          <MdOutlineBedroomParent />
+                          {item?.rooms}
+                        </h2>
+                        <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
+                          <Ruler className="h-4 w-4" />
+                          {item?.area}
+                        </h2>
+                        <Link
+                          href={`https://www.yad2.co.il/realestate/item/${item?.houseUrl}`}
+                          target="_blank"
+                          className="text-sm bg-slate-200 rounded-md p-2 text-gray"
+                        >
+                          <FaExternalLinkAlt />
+                        </Link>
+                      </div>
+                    </button>
+                    {/* </Link> */}
+                    <div className="mt-2 ">
+                      <p className="font-bold text-lg">לפי הסוכן:</p>
+                      <p>
+                        מחיר:{" "}
+                        {item?.predictedSalePrice === 0
+                          ? "לא ידוע"
+                          : formatPrice2(item?.predictedSalePrice)}
+                      </p>
+
+                      <p>
+                        מחיר השכרה:{" "}
+                        {item?.predictedRentPrice === 0
+                          ? "לא ידוע"
+                          : formatPrice2(item?.predictedRentPrice)}
+                      </p>
+
+                      <p>
+                        שיעור תשואה:{" "}
+                        {item?.predictedCapRate === null
+                          ? "לא ידוע"
+                          : item?.predictedCapRate + "%"}
+                      </p>
+                    </div>
                   </div>
-                </Link>
-                <div className="mt-2 ">
-                  <p className="font-bold text-lg">לפי הסוכן:</p>
-                  <p>
-                    מחיר:{" "}
-                    {item?.predictedSalePrice === 0
-                      ? "לא ידוע"
-                      : formatPrice2(item?.predictedSalePrice)}
-                  </p>
-
-                  <p>
-                    מחיר השכרה:{" "}
-                    {item?.predictedRentPrice === 0
-                      ? "לא ידוע"
-                      : formatPrice2(item?.predictedRentPrice)}
-                  </p>
-
-                  <p>
-                    שיעור תשואה:{" "}
-                    {item?.predictedCapRate === null
-                      ? "לא ידוע"
-                      : item?.predictedCapRate + "%"}
-                  </p>
-                </div>
-              </div>
-            ))}
+                ))}
+          </div>
+        </div>
+      </div>
+      <div className="h-full w-[300px] lg:w-[400px]">
+        {/*@ts-ignore */}
+        <GoogleMapsSection coordinates={center} />
       </div>
     </div>
   );
@@ -267,15 +308,15 @@ const Listings = ({}) => {
 
 export default Listings;
 
-function formatPrice(priceString: string): string {
-  const parts = priceString.split(".");
-  const integerPart = parts[0];
-  const fractionalPart = parts.length > 1 ? `.${parts[1]}` : "";
+// function formatPrice(priceString: string): string {
+//   const parts = priceString.split(".");
+//   const integerPart = parts[0];
+//   const fractionalPart = parts.length > 1 ? `.${parts[1]}` : "";
 
-  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+//   const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-  return formattedInteger + fractionalPart;
-}
+//   return formattedInteger + fractionalPart;
+// }
 
 function formatPrice2(priceString: string): string {
   const number = parseFloat(priceString);

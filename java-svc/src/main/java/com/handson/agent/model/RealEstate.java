@@ -17,10 +17,12 @@ public class RealEstate {
     private String street;
     private String city;
     private String imgUrl;
-    private Integer price;
+    private String price;
     private Integer rooms;
     private Integer area;
-    private Integer floor;
+    private String floor;
+    private float latitude;
+    private float longitude;
     private Integer predictedSalePrice;
     private Integer predictedRentPrice;
     private String predictedCapRate;
@@ -55,8 +57,8 @@ public class RealEstate {
     public RealEstate() {
     }
 
-    public RealEstate(String type, String neighborhood, String street, String city, String imgUrl, Integer price,
-            Integer rooms, Integer area, Integer floor, String houseUrl, Integer predictedSalePrice,
+    public RealEstate(String type, String neighborhood, String street, String city, String imgUrl, String price,
+            Integer rooms, Integer area, String floor, String houseUrl, Integer predictedSalePrice,
             Integer predictedRentPrice, String predictedCapRate) {
 
         this.type = type;
@@ -71,7 +73,7 @@ public class RealEstate {
         this.houseUrl = houseUrl;
         this.predictedSalePrice = predictedSalePrice;
         this.predictedRentPrice = predictedRentPrice;
-        this.predictedCapRate =  predictedCapRate;
+        this.predictedCapRate = predictedCapRate;
     }
 
     public RealEstate(String type, String city, JSONObject jsonObject, JSONObject predictedData) {
@@ -80,10 +82,10 @@ public class RealEstate {
         this.street = jsonObject.getString("street");
         this.city = city;
         this.imgUrl = jsonObject.getString("imgUrl");
-        this.price = jsonObject.getInt("price");
+        this.price = jsonObject.getString("price");
         this.rooms = jsonObject.getInt("rooms");
         this.area = jsonObject.getInt("area");
-        this.floor = jsonObject.getInt("floor");
+        this.floor = jsonObject.getString("floor");
         this.houseUrl = jsonObject.getString("houseUrl");
         try {
             this.predictedSalePrice = predictedData.getInt("salePrice");
@@ -92,6 +94,47 @@ public class RealEstate {
         } catch (Exception e) {
 
         }
+    }
+
+    public RealEstate(JSONObject data, JSONObject predictedData) {
+        this.type = data.getString("type");
+        this.neighborhood = data.getString("neighborhood");
+        this.street = data.getString("street");
+        this.city = data.getString("city");
+        this.imgUrl = data.getString("imgUrl");
+        this.price = data.getString("price");
+        this.rooms = data.getInt("rooms");
+        this.area = data.getInt("area");
+        this.floor = data.getString("floor");
+        this.houseUrl = data.getString("houseUrl");
+        try {
+            this.latitude = data.getJSONObject("coordinates").getFloat("latitude");
+            this.longitude = data.getJSONObject("coordinates").getFloat("longitude");
+        } catch (Exception e) {
+        }
+        try {
+            this.predictedSalePrice = predictedData.getInt("salePrice");
+            this.predictedRentPrice = predictedData.getInt("rentPrice");
+            this.predictedCapRate = predictedData.getString("capRate");
+        } catch (Exception e) {
+
+        }
+    }
+
+    public float getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(float latitude) {
+        this.latitude = latitude;
+    }
+
+    public float getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(float longitude) {
+        this.longitude = longitude;
     }
 
     @Override
@@ -141,11 +184,11 @@ public class RealEstate {
         this.imgUrl = imgUrl;
     }
 
-    public Integer getPrice() {
+    public String getPrice() {
         return price;
     }
 
-    public void setPrice(Integer price) {
+    public void setPrice(String price) {
         this.price = price;
     }
 
@@ -165,11 +208,11 @@ public class RealEstate {
         this.area = area;
     }
 
-    public Integer getFloor() {
+    public String getFloor() {
         return floor;
     }
 
-    public void setFloor(Integer floor) {
+    public void setFloor(String floor) {
         this.floor = floor;
     }
 

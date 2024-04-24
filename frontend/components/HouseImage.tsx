@@ -10,6 +10,9 @@ interface HouseImageProps {
 const HouseImage: FC<HouseImageProps> = ({ imageUrl }) => {
   const [isLoading, setLoading] = useState(true);
   return (
+  // <Image src={imageUrl} alt="image" priority height={50} width={300}/>
+    // <Image src={imageUrl} alt="image" priority height={300} width={300}/>
+    // <div className="aspect-w-5 aspect-h-10">
     <div className="aspect-w-16 aspect-h-10">
       <Image
         src={imageUrl}
