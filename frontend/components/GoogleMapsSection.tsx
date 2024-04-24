@@ -17,7 +17,8 @@ function GoogleMapsSection(center: GoogleMapsSectionProps, marker:any) {
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
-    googleMapsApiKey: "AIzaSyDzzRO8iqlHkKfThTNZT4iMjbVq23UeiHA",
+    //@ts-ignore
+    googleMapsApiKey:  process.env.GOOGLEMAPS_API_SECRET,
   });
 
   const [map, setMap] = useState(null);
