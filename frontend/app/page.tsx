@@ -1,14 +1,10 @@
-// "use client";
 import Listings from "@/components/Listings";
-// import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export default function Home() {
-  // const queryClient = new QueryClient();
+  const googleMapsApiKey = process.env.GOOGLEMAPS_API_SECRET
   return (
     <div>
-      {/* <QueryClientProvider client={queryClient}> */}
-        <Listings />
-      {/* </QueryClientProvider> */}
+        <Listings googleMapsApiKey={googleMapsApiKey} />
     </div>
   );
 }

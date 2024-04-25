@@ -10,4 +10,4 @@
 
 .vscode/
 
-.env
+/frontend/.env

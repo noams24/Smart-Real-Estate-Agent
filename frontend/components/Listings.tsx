@@ -37,9 +37,15 @@ const cityDict: { [key: string]: string } = {
   "ראשון לציון": "8300",
 };
 
-const Listings = ({}) => {
+import { FC } from "react";
+
+interface ListingsProps {
+  googleMapsApiKey: string | undefined;
+}
+
+const Listings: FC<ListingsProps> = ({ googleMapsApiKey }) => {
   const [listings, setListings] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(false);
   const [realEstateType, setType] = useState<string>("forsale");
   const [city, setCity] = useState<string>("");
   const [minPrice, setMinPrice] = useState<number | null>();
@@ -48,11 +54,14 @@ const Listings = ({}) => {
   const [displayedCity, setDisplayedCity] = useState<string>("");
   const [searched, setSearch] = useState<boolean>(false);
   const [sortBy, setSort] = useState<string>("תאריך העלאה");
-  const [center, setCenter] = useState({
+  const [center, setCenter] = useState<{ lat: number; lng: number }>({
     lat: 32.0714,
     lng: 34.7644,
   });
-
+  const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
+  // console.log(process.env.GOOGLEMAPS_API_SECRET)
   // const [predictedPricedData, setPredict] = useState<Object>({})
 
   const getListings = async (sort: string) => {
@@ -70,7 +79,7 @@ const Listings = ({}) => {
       }).then((data) => {
         const sortedData = sortData(data.data, sort);
         setListings(sortedData);
-        setLoading(false)
+        setLoading(false);
         setDisplayedCity(city);
       });
     } catch (e) {
@@ -122,6 +131,10 @@ const Listings = ({}) => {
       lat: latitude,
       lng: longitude,
     });
+    setMarker({
+      lat: latitude,
+      lng: longitude,
+    });
   };
 
   return (
@@ -162,7 +175,12 @@ const Listings = ({}) => {
               <p>עצור חיפוש</p>
             </Button>
           ) : (
-            <Button className="flex gap-2" onClick={() => {setLoading(true), setSearch(true)}}>
+            <Button
+              className="flex gap-2"
+              onClick={() => {
+                setLoading(true), setSearch(true);
+              }}
+            >
               <p>חפש</p>
               <Search />
             </Button>
@@ -206,7 +224,9 @@ const Listings = ({}) => {
             </SelectContent>
           </Select>
         </div>
-        {loading === true && <h2 className="font-bold text-xl mt-3">טוען...</h2>}
+        {loading === true && (
+          <h2 className="font-bold text-xl mt-3">טוען...</h2>
+        )}
         {displayedCity && (
           <h1 className="my-5 text-xl font-extrabold">
             נדלן
@@ -214,7 +234,6 @@ const Listings = ({}) => {
             {displayedCity}
           </h1>
         )}
-        {/* <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"> */}
         <div className="max-h-[60dvh] overflow-y-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
             {listings &&
@@ -227,11 +246,8 @@ const Listings = ({}) => {
                     key={index}
                     className="border hover:border-primary rounded-md pb-2"
                   >
-                    {/* <Link
-                    href={`https://www.yad2.co.il/realestate/item/${item?.houseUrl}`}
-                    target="_blank"
-                  > */}
-                    <button className="w-full"
+                    <button
+                      className="w-full"
                       onClick={() =>
                         handleCoordinates(item.latitude, item.longitude)
                       }
@@ -239,7 +255,6 @@ const Listings = ({}) => {
                       <HouseImage imageUrl={item.imgUrl} />
                       <div className="mt-2 flex-col gap-2">
                         <h2>{item?.price}</h2>
-                        {/* <h2>{formatPrice(item?.price.toString())} ₪</h2> */}
                       </div>
                       <h2 className="flex gap-2 text-sm text-gray-400">
                         <MapPin className="h-4 w-4" />
@@ -249,9 +264,6 @@ const Listings = ({}) => {
                         <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
                           קומה: {item?.floor}
                         </h2>
-                        {/* <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
-                      סוג: {item?.type}
-                    </h2> */}
                         <h2 className="flex justify-center gap-2 items-center text-sm bg-slate-200 rounded-md p-2 text-gray">
                           <MdOutlineBedroomParent />
                           {item?.rooms}
@@ -269,7 +281,6 @@ const Listings = ({}) => {
                         </Link>
                       </div>
                     </button>
-                    {/* </Link> */}
                     <div className="mt-2 ">
                       <p className="font-bold text-lg">לפי הסוכן:</p>
                       <p>
@@ -299,8 +310,11 @@ const Listings = ({}) => {
         </div>
       </div>
       <div className="h-full w-[300px] lg:w-[400px]">
-        {/*@ts-ignore */}
-        <GoogleMapsSection coordinates={center} />
+        <GoogleMapsSection
+          center={center}
+          marker={marker}
+          googleMapsApiKey={googleMapsApiKey}
+        />
       </div>
     </div>
   );
