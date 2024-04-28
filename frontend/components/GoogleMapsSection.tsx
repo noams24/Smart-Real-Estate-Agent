@@ -29,7 +29,6 @@ const GoogleMapsSection: React.FC<GoogleMapsSectionProps> = ({
     //@ts-ignore
     googleMapsApiKey: googleMapsApiKey,
   });
-
   const [map, setMap] = useState(null);
   const onLoad = React.useCallback(function callback(map: any) {
     //@ts-ignore

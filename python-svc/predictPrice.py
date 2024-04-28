@@ -40,7 +40,6 @@ def scrapeData(token):
     items = { item['key']: item['value'] for item in unit['additional_info_items_v2'] }
     return {
     'city': unit['city_text'],
-    # 'neighborhood': unit['neighborhood'],
     'house_type': unit['main_title'].split('&nbsp')[0],
     'house_area': unit['square_meters'],
     'garden_area': unit['garden_area'],
@@ -55,56 +54,4 @@ def scrapeData(token):
     'accessibility': unit['analytics_items']['handicapped'],
     'bars': unit['on_pillars'],
     'storage': unit['analytics_items']['storeroom'],
-    # 'price': int(unit['price'].replace('₪', '').replace(',', '').strip()),
   }
-
-
-
-
-
-# predictAll2("r29oq8qv")
-
-
-
-# def predictRent(data): 
-#     processed_data = preprocess_input(data)
-#     rent_model = joblib.load('models/rent_predict.pkl')
-#     rent_predicted_price = rent_model.predict(processed_data)
-#     return round(math.exp(rent_predicted_price[0]))
-
-
-# def predictSale(data):
-#     processed_data = preprocess_input(data)
-#     sales_model = joblib.load('models/sales_predict.pkl')
-#     sale_predicted_price = sales_model.predict(processed_data)
-#     return round(math.exp(sale_predicted_price[0]))
-
-
-# def predictAll(data):
-#     sales_model = joblib.load('models/sales_predict.pkl')
-#     rent_model = joblib.load('models/rent_predict.pkl')
-#     processed_data = preprocess_input(data)
-#     sale_predicted_price = sales_model.predict(processed_data)
-#     sale_predicted_price = round(math.exp(sale_predicted_price[0]))
-#     rent_predicted_price = rent_model.predict(processed_data)
-#     rent_predicted_price = round(math.exp(rent_predicted_price[0]))
-    
-#     cap_rate = (rent_predicted_price * 12 * 100)/sale_predicted_price
-#     cap_rate = '{:.3f}'.format(round(cap_rate, 5))
-
-#     return sale_predicted_price, rent_predicted_price, cap_rate
-
-
-# def predictAll2(token):
-#     data = scrapeData(token)
-#     sales_model = joblib.load('models/sales_predict.pkl')
-#     rent_model = joblib.load('models/rent_predict.pkl')
-#     processed_data = preprocess_input(data)
-#     sale_predicted_price = sales_model.predict(processed_data)
-#     sale_predicted_price = round(math.exp(sale_predicted_price[0]))
-#     rent_predicted_price = rent_model.predict(processed_data)
-#     rent_predicted_price = round(math.exp(rent_predicted_price[0]))
-    
-#     cap_rate = (rent_predicted_price * 12 * 100)/sale_predicted_price
-#     cap_rate = '{:.3f}'.format(round(cap_rate, 5))
-#     return sale_predicted_price, rent_predicted_price, cap_rate

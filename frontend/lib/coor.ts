@@ -3,7 +3,7 @@ export const coordinates = {
     lat: 32.8071,
     lng: 34.9828,
   },
-  " תל אביב": {
+  "תל אביב": {
     lat: 32.0714,
     lng: 34.7644,
   },

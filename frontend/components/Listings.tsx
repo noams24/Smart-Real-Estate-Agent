@@ -41,9 +41,10 @@ import { FC } from "react";
 
 interface ListingsProps {
   googleMapsApiKey: string | undefined;
+  serverEndPoint: string | undefined;
 }
 
-const Listings: FC<ListingsProps> = ({ googleMapsApiKey }) => {
+const Listings: FC<ListingsProps> = ({ googleMapsApiKey, serverEndPoint }) => {
   const [listings, setListings] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [realEstateType, setType] = useState<string>("forsale");
@@ -61,14 +62,13 @@ const Listings: FC<ListingsProps> = ({ googleMapsApiKey }) => {
   const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(
     null
   );
-  // console.log(process.env.GOOGLEMAPS_API_SECRET)
-  // const [predictedPricedData, setPredict] = useState<Object>({})
-
+  
   const getListings = async (sort: string) => {
     try {
       const data = await axios({
         method: "get",
-        url: "http://localhost:8080/api/agent",
+        // url: "http://localhost:8080/api/agent",
+        url: serverEndPoint,
         params: {
           type: realEstateType,
           city: cityDict[city],

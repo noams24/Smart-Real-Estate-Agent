@@ -41,7 +41,8 @@ public class RealEstateController {
         @Autowired
         private PredictService predictService;
 
-        @CrossOrigin
+        // @CrossOrigin
+        @CrossOrigin(origins = {"http://localhost:3000", "https://smart-agent.vercel.app/"})
         @RequestMapping(value = "/agent", method = RequestMethod.GET)
         public ResponseEntity<?> getHouses(@RequestParam(defaultValue = "forsale") String type,
                         @RequestParam String city,
