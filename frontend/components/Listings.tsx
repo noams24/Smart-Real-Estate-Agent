@@ -18,11 +18,9 @@ import {
 } from "@/components/ui/select";
 import { Input } from "./ui/input";
 import Link from "next/link";
-import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 import GoogleMapsSection from "./GoogleMapsSection";
 import { coordinates } from "@/lib/coor";
 import { FaExternalLinkAlt } from "react-icons/fa";
-import { set } from "react-hook-form";
 
 const cityDict: { [key: string]: string } = {
   חיפה: "4000",
@@ -62,13 +60,13 @@ const Listings: FC<ListingsProps> = ({ googleMapsApiKey, serverEndPoint }) => {
   const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(
     null
   );
-  
+
   const getListings = async (sort: string) => {
     try {
       const data = await axios({
         method: "get",
-        // url: "http://localhost:8080/api/agent",
-        url: serverEndPoint,
+        url: "http://localhost:8080/api/agent",
+        // url: serverEndPoint,
         params: {
           type: realEstateType,
           city: cityDict[city],
@@ -95,7 +93,7 @@ const Listings: FC<ListingsProps> = ({ googleMapsApiKey, serverEndPoint }) => {
       getListings(sortBy);
       intervalId = setInterval(() => {
         getListings(sortBy);
-      }, 4000);
+      }, 4500);
     } else {
       clearInterval(intervalId);
     }
@@ -104,6 +102,9 @@ const Listings: FC<ListingsProps> = ({ googleMapsApiKey, serverEndPoint }) => {
   }, [searched, sortBy]);
 
   const sortData = (data: any, sort: string) => {
+    if (data === null) {
+      return null;
+    }
     if (sort === "date") {
       //@ts-ignore
       return data.sort((a, b) => {
@@ -113,15 +114,19 @@ const Listings: FC<ListingsProps> = ({ googleMapsApiKey, serverEndPoint }) => {
       });
     } else if (sort === "price") {
       //@ts-ignore
-      return data.sort((a, b) => a.price - b.price);
+      return data.sort((a, b) => parseNumber(a.price) - parseNumber(b.price));
     } else if (sort === "agentCapRate") {
       //@ts-ignore
       return data.sort((a, b) => a.predictedCapRate - b.predictedCapRate);
     } else if (sort === "gap") {
+      // const priceDifference = (data:any) => data.predictedSalePrice - data.price;
+      // return data.sort(priceDifference);
       return data.sort(
         //@ts-ignore
         (a, b) =>
-          a.predictedSalePrice - a.price - (b.predictedSalePrice - b.price)
+          a.predictedSalePrice -
+          parseNumber(a.price) -
+          (b.predictedSalePrice - parseNumber(b.price))
       );
     } else return data;
   };
@@ -135,6 +140,12 @@ const Listings: FC<ListingsProps> = ({ googleMapsApiKey, serverEndPoint }) => {
       lat: latitude,
       lng: longitude,
     });
+  };
+
+  const handleSort = (e: string) => {
+    setSort(e);
+    const sortedData = sortData(listings, e);
+    setListings(sortedData);
   };
 
   return (
@@ -210,7 +221,8 @@ const Listings: FC<ListingsProps> = ({ googleMapsApiKey, serverEndPoint }) => {
           />
         </div>
         <div className="mt-7">
-          <Select onValueChange={(e) => setSort(e)}>
+          {/* <Select onValueChange={(e) => setSort(e)}> */}
+          <Select onValueChange={(e) => handleSort(e)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="מיין לפי..." />
             </SelectTrigger>
@@ -335,6 +347,12 @@ export default Listings;
 function formatPrice2(priceString: string): string {
   const number = parseFloat(priceString);
   return number.toLocaleString("en-US");
+}
+
+function parseNumber(str: string): number {
+  const regex = /[^0-9\.]/g;
+  const parsedString = str.replace(regex, "");
+  return parseFloat(parsedString);
 }
 
 {

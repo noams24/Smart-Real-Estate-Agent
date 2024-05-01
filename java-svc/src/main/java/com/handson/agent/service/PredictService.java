@@ -23,8 +23,8 @@ public class PredictService {
         headers.add("Content-Type", "application/json");
         HttpEntity<String[]> requestEntity = new HttpEntity<>(keys2, headers);
         ResponseEntity<String> response = restTemplate.exchange(
-            "https://smart-agent-fastapi2.runmydocker-app.com/predict-house-all/",
-            // "http://fastapi:8000/predict-house-all/",
+            // "https://smart-agent-fastapi2.runmydocker-app.com/predict-house-all/",
+            "http://fastapi:8000/predict-house-all/",
                 // "http://127.0.0.1:8000/predict-house-all/",
                 HttpMethod.POST,
                 requestEntity,
